@@ -6,16 +6,6 @@
 
 ---
 
-## 📸 Screenshots
-
-![Dashboard](screenshots/dashboard.png)
-![Meetings](screenshots/meetings.png)
-![Login](screenshots/login.png)
-![Team](screenshots/team.png)
-![Settings](screenshots/settings.png)
-
----
-
 **MeetAssist** is an enterprise-grade AI Meeting and Task Assistant. It intelligently records or processes meeting audio, automatically generates summaries, and extracts actionable tasks. Built with a robust Role-Based Access Control (RBAC) system, it enables structural managers to oversee employees, delegate tasks, and maintain seamless team workflows.
 
 ## 🚀 Key Features
@@ -116,6 +106,42 @@
 1. **Manager Registration:** A user registers as an **Admin/Manager**.
 2. **Code Generation:** The Manager navigates to **Settings** to find or regenerate their unique 6-character **Team Access Code**.
 3. **Employee Registration:** A new user registers as an **Employee** and inputs the Manager's Team Code. They are instantly linked to the Manager's dashboard for task delegation.
+
+---
+
+## 📸 Screenshots
+
+### 📊 Dashboard (Task Board)
+
+<p align="center">
+  <img src="screenshots/dashboard.png" width="600"/>
+</p>
+
+### 🤖 AI Meeting Processing
+
+<p align="center">
+  <img src="screenshots/meetings.png" width="600"/>
+</p>
+
+### 🔐 Authentication (Login)
+
+<p align="center">
+  <img src="screenshots/login.png" width="600"/>
+</p>
+
+### 👥 Team Directory
+
+<p align="center">
+  <img src="screenshots/team.png" width="600"/>
+</p>
+
+### ⚙️ Settings & Access Control
+
+<p align="center">
+  <img src="screenshots/settings.png" width="600"/>
+</p>
+
+---
 
 ## 👨‍💻 Author
 
