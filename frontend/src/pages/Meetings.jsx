@@ -14,6 +14,7 @@ const Meetings = () => {
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [includeScreen, setIncludeScreen] = useState(false);
   const [recordingStream, setRecordingStream] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -37,57 +38,75 @@ const Meetings = () => {
 
   const startRecording = async () => {
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: "browser" },
-        audio: true
-      });
       const voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      let finalStream = voiceStream;
+      let displayStream = null;
+      let audioCtx = null;
 
-      const audioCtx = new AudioContext();
-      const dest = audioCtx.createMediaStreamDestination();
+      if (includeScreen) {
+        audioCtx = new AudioContext();
+        const dest = audioCtx.createMediaStreamDestination();
+        
+        const sourceMic = audioCtx.createMediaStreamSource(voiceStream);
+        sourceMic.connect(dest);
 
-      if (displayStream.getAudioTracks().length > 0) {
-        const source1 = audioCtx.createMediaStreamSource(new MediaStream([displayStream.getAudioTracks()[0]]));
-        source1.connect(dest);
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: "browser" },
+          audio: true
+        });
+        
+        if (displayStream.getAudioTracks().length > 0) {
+          const sourceScreen = audioCtx.createMediaStreamSource(displayStream);
+          sourceScreen.connect(dest);
+        }
+        
+        finalStream = dest.stream;
       }
-      if (voiceStream.getAudioTracks().length > 0) {
-        const source2 = audioCtx.createMediaStreamSource(new MediaStream([voiceStream.getAudioTracks()[0]]));
-        source2.connect(dest);
-      }
-
-      const finalStream = dest.stream;
 
       const mediaRecorder = new MediaRecorder(finalStream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
+      
+      // Visualizer shows the final mixed audio (mic + screen)
       setRecordingStream(finalStream);
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/mp3' });
-        const audioFile = new File([audioBlob], "live-recording.mp3", { type: 'audio/mp3' });
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        
+        let extension = 'webm';
+        if (mimeType.includes('mp4')) extension = 'mp4';
+        else if (mimeType.includes('ogg')) extension = 'ogg';
+
+        const audioFile = new File([audioBlob], `live-recording.${extension}`, { type: mimeType });
         setFile(audioFile);
         
-        displayStream.getTracks().forEach(track => track.stop());
+        // Cleanup all tracks securely
+        if (displayStream) displayStream.getTracks().forEach(track => track.stop());
         voiceStream.getTracks().forEach(track => track.stop());
         finalStream.getTracks().forEach(track => track.stop());
-        if (audioCtx.state !== 'closed') audioCtx.close();
+        if (audioCtx && audioCtx.state !== 'closed') audioCtx.close();
       };
 
-      mediaRecorder.start();
+      // Start recording with 1-second chunks for reliability
+      mediaRecorder.start(1000);
       setIsRecording(true);
       setRecordingTime(0);
+      
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
+
     } catch (err) {
-      console.error("Error accessing audio devices", err);
-      toast.error("Recording failed. Ensure you allow microphone access and check 'Share System Audio' when selecting the screen/tab.");
+      console.error("Recording error", err);
+      toast.error("Failed to start recording. Please check permissions.");
     }
   };
 
@@ -171,14 +190,20 @@ const Meetings = () => {
                   <div className="flex-1 border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 hover:border-blue-300 transition-colors">
                     <input type="file" onChange={e => setFile(e.target.files[0])} accept="audio/*,video/*" className="hidden" id="file-upload" />
                     <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
-                      <UploadCloud className={`h-6 w-6 mb-2 transition-colors ${file && file.name !== 'live-recording.mp3' ? 'text-green-500' : 'text-blue-500'}`} />
+                      <UploadCloud className={`h-6 w-6 mb-2 transition-colors ${file && !file.name.startsWith('live-recording') ? 'text-green-500' : 'text-blue-500'}`} />
                       <span className="text-xs text-gray-600 font-medium">Upload File</span>
                     </label>
                   </div>
                   
-                  <div className="flex-1 border-2 border-gray-200 bg-red-50/50 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer" onClick={startRecording}>
-                     <Mic className="h-6 w-6 text-red-500 mb-2" />
-                     <span className="text-xs text-gray-600 font-medium">Record Audio</span>
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 border-2 border-gray-200 bg-red-50/50 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer" onClick={startRecording}>
+                       <Mic className="h-6 w-6 text-red-500 mb-2" />
+                       <span className="text-xs text-gray-600 font-medium">Record Audio</span>
+                    </div>
+                    <label className="flex items-center justify-center gap-2 mt-2 cursor-pointer text-xs text-gray-500 font-medium">
+                      <input type="checkbox" checked={includeScreen} onChange={e => setIncludeScreen(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                      Include screen audio
+                    </label>
                   </div>
                 </div>
               ) : (
@@ -204,6 +229,7 @@ const Meetings = () => {
             </div>
 
             <button type="submit" disabled={uploading || !file || !title || isRecording}
+              title={isRecording ? "Stop recording to extract tasks" : ""}
               className="w-full py-3 mt-4 text-white rounded-xl font-bold text-sm tracking-wide shadow-xl shadow-blue-600/20 hover:shadow-blue-600/40 bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 disabled:opacity-50 transition-all duration-300 flex justify-center transform hover:-translate-y-0.5">
               {uploading ? <span className="flex items-center gap-2"><Loader2 className="animate-spin h-5 w-5" /> Processing Engine...</span> : 'Save & Extract Tasks'}
             </button>

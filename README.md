@@ -8,18 +8,27 @@
 
 **MeetAssist** is an enterprise-grade AI Meeting and Task Assistant. It intelligently records or processes meeting audio, automatically generates summaries, and extracts actionable tasks. Built with a robust Role-Based Access Control (RBAC) system, it enables structural managers to oversee employees, delegate tasks, and maintain seamless team workflows.
 
-## 🚀 Key Features
+🚀 Key Features
 
-* **Intelligent Audio Processing:** Upload audio files or record meetings live directly from the browser.
-* **AI-Powered Summaries & Tasks:** Leverages OpenAI to generate meeting transcripts, concise summaries, and automatically extract a list of action items.
-* **Role-Based Access Control (RBAC):**
+Intelligent Audio Processing: Upload audio files or record meetings live directly from the browser with support for microphone + system audio mixing and real-time waveform visualization.
 
-  * **Admin/Manager:** Supervise employees, view team analytics, generate secure Team Access Codes, and manage global team tasks.
-  * **Employee:** Join teams via Team Codes, view personal and delegated tasks, and manage personal profile settings.
-* **Interactive Task Board:** A dynamic Kanban-style board to track tasks (`Pending`, `In Progress`, `Completed`) with drag-and-drop functionality.
-* **Team Delegation:** Assign tasks directly to team members and set detailed deadlines.
-* **Export Capabilities:** Download tasks as `.ics` calendar events or export full meeting reports as beautifully formatted PDFs.
-* **Modern Security:** Secure JWT authentication, encrypted password hashing (BCrypt), and robust route protection.
+AI-Powered Summaries & Tasks: Leverages Whisper and LLaMA/OpenAI models to generate meeting transcripts, concise summaries, and automatically extract actionable tasks and deadlines.
+
+Role-Based Access Control (RBAC):
+Admin/Manager: Supervise employees, view team analytics, generate secure Team Access Codes, and manage global team tasks.
+Employee: Join teams via Team Codes, view personal and delegated tasks, and manage personal profile settings.
+
+Interactive Task Board: A dynamic Kanban-style board to track tasks (Pending, In Progress, Completed) with drag-and-drop functionality.
+
+Smart Task Assignment: Automatically assigns tasks using AI-based name matching from meeting conversations.
+
+Team Delegation: Assign tasks directly to team members and set detailed deadlines.
+
+Export Capabilities: Download tasks as .ics calendar events or export full meeting reports as beautifully formatted PDFs.
+
+Real-Time Notifications: Instant alerts when tasks are assigned or updated.
+
+Modern Security: Secure JWT authentication, encrypted password hashing (BCrypt), and robust route protection.
 
 ## 🛠️ Tech Stack
 

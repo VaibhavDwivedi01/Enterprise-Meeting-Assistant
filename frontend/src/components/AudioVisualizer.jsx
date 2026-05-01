@@ -10,6 +10,11 @@ const AudioVisualizer = ({ stream }) => {
     if (!stream) return;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(err => console.error("Could not resume audio context", err));
+    }
+
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
     analyserRef.current = analyser;

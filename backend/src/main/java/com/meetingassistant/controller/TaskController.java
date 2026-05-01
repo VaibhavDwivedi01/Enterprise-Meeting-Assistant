@@ -59,4 +59,9 @@ public class TaskController {
     public ResponseEntity<List<TaskDTO>> getDelegatedTasks(Authentication authentication) {
         return ResponseEntity.ok(taskService.getDelegatedTasks(authentication.getName()));
     }
+
+    @PostMapping("/manual")
+    public ResponseEntity<TaskDTO> createManualTask(@RequestBody java.util.Map<String, String> body, Authentication authentication) {
+        return ResponseEntity.ok(taskService.createManualTask(body.get("title"), body.get("deadline"), authentication.getName()));
+    }
 }

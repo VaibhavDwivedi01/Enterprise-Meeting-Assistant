@@ -10,7 +10,27 @@ const Tasks = () => {
   const [viewMode, setViewMode] = useState('my_tasks'); // 'my_tasks' | 'delegated'
   const [delegateModal, setDelegateModal] = useState({ isOpen: false, task: null, email: '' });
   const [deadlineModal, setDeadlineModal] = useState({ isOpen: false, task: null, deadline: '' });
+  const [addTaskModal, setAddTaskModal] = useState({ isOpen: false, title: '', deadline: '' });
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, taskId: null });
   const { user } = useContext(AuthContext);
+
+  const closeAddTaskModal = () => setAddTaskModal({ isOpen: false, title: '', deadline: '' });
+
+  const handleCreateManualTask = async () => {
+    if (!addTaskModal.title) {
+       toast.error('Task title is required');
+       return;
+    }
+    try {
+      await api.post('/tasks/manual', { title: addTaskModal.title, deadline: addTaskModal.deadline });
+      toast.success('Task created successfully!');
+      fetchTasks();
+      closeAddTaskModal();
+    } catch (err) {
+      toast.error('Failed to create task');
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -41,13 +61,21 @@ const Tasks = () => {
     }
   };
 
-  const deleteTask = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
+  const openDeleteModal = (id) => setDeleteModal({ isOpen: true, taskId: id });
+  const closeDeleteModal = () => setDeleteModal({ isOpen: false, taskId: null });
+
+  const confirmDelete = async () => {
+    const { taskId } = deleteModal;
+    if (!taskId) return;
     try {
-      await api.delete(`/tasks/${id}`);
-      setTasks(tasks.filter(t => t.id !== id));
+      await api.delete(`/tasks/${taskId}`);
+      setTasks(tasks.filter(t => t.id !== taskId));
+      toast.success('Task deleted successfully');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to delete task');
+    } finally {
+      closeDeleteModal();
     }
   };
 
@@ -140,11 +168,16 @@ END:VCALENDAR`;
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-200">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Task Board</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage tasks auto-extracted from your meetings.</p>
+          <p className="mt-1 text-sm text-gray-500">Manage tasks auto-extracted from your meetings or manually created.</p>
         </div>
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-           <button onClick={() => setViewMode('my_tasks')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'my_tasks' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>My Tasks</button>
-           <button onClick={() => setViewMode('delegated')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'delegated' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Delegated by Me</button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setAddTaskModal({ isOpen: true, title: '', deadline: '' })} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm">
+            + Create Task
+          </button>
+          <div className="flex bg-gray-100 p-1 rounded-xl">
+             <button onClick={() => setViewMode('my_tasks')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'my_tasks' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>My Tasks</button>
+             <button onClick={() => setViewMode('delegated')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'delegated' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Delegated by Me</button>
+          </div>
         </div>
       </div>
 
@@ -160,8 +193,8 @@ END:VCALENDAR`;
              <span className="ml-1 bg-white px-2 py-0.5 rounded-full text-xs font-bold">{tasks.filter(t => t.status === 'PENDING').length}</span>
            </h3>
            <div className="space-y-4">
-             {tasks.filter(t => t.status === 'PENDING').map(task => (
-               <TaskCard key={task.id} task={task} onUpdate={updateStatus} onDownloadICS={downloadICS} onDragStart={handleDragStart} onDelete={deleteTask} onDelegate={openDelegateModal} onUpdateDeadline={openDeadlineModal} viewMode={viewMode} />
+              {tasks.filter(t => t.status === 'PENDING').map(task => (
+               <TaskCard key={task.id} task={task} onUpdate={updateStatus} onDownloadICS={downloadICS} onDragStart={handleDragStart} onDelete={openDeleteModal} onDelegate={openDelegateModal} onUpdateDeadline={openDeadlineModal} viewMode={viewMode} />
              ))}
              {tasks.filter(t => t.status === 'PENDING').length === 0 && <p className="text-sm text-gray-400 text-center py-4">No pending tasks</p>}
            </div>
@@ -178,8 +211,8 @@ END:VCALENDAR`;
              <span className="ml-1 bg-white px-2 py-0.5 rounded-full text-xs font-bold">{tasks.filter(t => t.status === 'IN_PROGRESS').length}</span>
            </h3>
            <div className="space-y-4">
-             {tasks.filter(t => t.status === 'IN_PROGRESS').map(task => (
-               <TaskCard key={task.id} task={task} onUpdate={updateStatus} onDownloadICS={downloadICS} onDragStart={handleDragStart} onDelete={deleteTask} onDelegate={openDelegateModal} onUpdateDeadline={openDeadlineModal} viewMode={viewMode} />
+              {tasks.filter(t => t.status === 'IN_PROGRESS').map(task => (
+               <TaskCard key={task.id} task={task} onUpdate={updateStatus} onDownloadICS={downloadICS} onDragStart={handleDragStart} onDelete={openDeleteModal} onDelegate={openDelegateModal} onUpdateDeadline={openDeadlineModal} viewMode={viewMode} />
              ))}
              {tasks.filter(t => t.status === 'IN_PROGRESS').length === 0 && <p className="text-sm text-gray-400 text-center py-4">No tasks in progress</p>}
            </div>
@@ -196,8 +229,8 @@ END:VCALENDAR`;
              <span className="ml-1 bg-white px-2 py-0.5 rounded-full text-xs font-bold">{tasks.filter(t => t.status === 'COMPLETED').length}</span>
            </h3>
            <div className="space-y-4">
-             {tasks.filter(t => t.status === 'COMPLETED').map(task => (
-               <TaskCard key={task.id} task={task} onUpdate={updateStatus} onDownloadICS={downloadICS} onDragStart={handleDragStart} onDelete={deleteTask} onDelegate={openDelegateModal} onUpdateDeadline={openDeadlineModal} viewMode={viewMode} />
+              {tasks.filter(t => t.status === 'COMPLETED').map(task => (
+               <TaskCard key={task.id} task={task} onUpdate={updateStatus} onDownloadICS={downloadICS} onDragStart={handleDragStart} onDelete={openDeleteModal} onDelegate={openDelegateModal} onUpdateDeadline={openDeadlineModal} viewMode={viewMode} />
              ))}
              {tasks.filter(t => t.status === 'COMPLETED').length === 0 && <p className="text-sm text-gray-400 text-center py-4">No completed tasks</p>}
            </div>
@@ -245,6 +278,61 @@ END:VCALENDAR`;
             <div className="flex justify-end gap-3">
               <button onClick={closeDeadlineModal} className="px-5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
               <button onClick={confirmDeadline} className="px-5 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all">Save Deadline</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addTaskModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 transform transition-all">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Create Task</h3>
+              <button onClick={closeAddTaskModal} className="text-gray-400 hover:bg-gray-100 p-1.5 rounded-full transition-colors"><X className="h-5 w-5"/></button>
+            </div>
+            <p className="text-sm text-gray-500 mb-5">Manually create a new task. It will be assigned to you by default.</p>
+            
+            <label className="block text-sm font-medium text-gray-700 mb-1">Task Title <span className="text-red-500">*</span></label>
+            <input 
+              type="text" 
+              value={addTaskModal.title} 
+              onChange={e => setAddTaskModal({...addTaskModal, title: e.target.value})} 
+              placeholder="e.g. Prepare Q3 presentation"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all mb-4"
+            />
+            
+            <label className="block text-sm font-medium text-gray-700 mb-1">Deadline (Optional)</label>
+            <input 
+              type="text" 
+              value={addTaskModal.deadline} 
+              onChange={e => setAddTaskModal({...addTaskModal, deadline: e.target.value})} 
+              placeholder="e.g. Next Friday"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all mb-6"
+            />
+            
+            <div className="flex justify-end gap-3">
+              <button onClick={closeAddTaskModal} className="px-5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
+              <button onClick={handleCreateManualTask} className="px-5 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/30 transition-all">Create Task</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-gray-100 transform transition-all">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-red-100 p-3 rounded-full flex-shrink-0">
+                 <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Delete Task</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to delete this task? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button onClick={closeDeleteModal} className="px-5 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} className="px-5 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all">Delete Task</button>
             </div>
           </div>
         </div>

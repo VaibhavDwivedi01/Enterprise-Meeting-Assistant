@@ -39,7 +39,13 @@ public class TaskService {
 
     public List<TaskDTO> getTasksByTeam(String email) {
         User manager = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
-        return taskRepository.findByAssignedToManagerId(manager.getId()).stream().map(this::mapToDTO).collect(Collectors.toList());
+        List<Task> teamTasks = taskRepository.findByAssignedToManagerId(manager.getId());
+        List<Task> myTasks = taskRepository.findByAssignedToId(manager.getId());
+        
+        List<Task> allTasks = new java.util.ArrayList<>(teamTasks);
+        allTasks.addAll(myTasks);
+        
+        return allTasks.stream().distinct().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     public List<TaskDTO> getDashboardTasks(String email) {
@@ -107,6 +113,24 @@ public class TaskService {
     public List<TaskDTO> getDelegatedTasks(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
         return taskRepository.findByDelegatedById(user.getId()).stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    public TaskDTO createManualTask(String title, String deadline, String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+        Task task = new Task();
+        task.setTitle(title);
+        task.setDescription(title);
+        task.setDeadline(deadline);
+        task.setAssignedTo(user);
+        task.setStatus("PENDING");
+        taskRepository.save(task);
+
+        Notification notif = new Notification();
+        notif.setUser(user);
+        notif.setMessage("You manually created a task: " + task.getTitle());
+        notificationRepository.save(notif);
+
+        return mapToDTO(task);
     }
 
     private TaskDTO mapToDTO(Task task) {

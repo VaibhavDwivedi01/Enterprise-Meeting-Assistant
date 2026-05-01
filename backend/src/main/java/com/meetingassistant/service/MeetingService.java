@@ -76,7 +76,10 @@ public class MeetingService {
 
                     String assignedToName = tData.get("assignedToName");
                     User assignedUser = userRepository.findAll().stream()
-                        .filter(u -> u.getName() != null && u.getName().equalsIgnoreCase(assignedToName))
+                        .filter(u -> u.getName() != null && assignedToName != null &&
+                                (u.getName().equalsIgnoreCase(assignedToName) ||
+                                 u.getName().toLowerCase().contains(assignedToName.toLowerCase()) ||
+                                 assignedToName.toLowerCase().contains(u.getName().toLowerCase())))
                         .findFirst().orElse(user);
 
                     task.setAssignedTo(assignedUser);
